@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import ImageScanner from './ImageScanner'
 
 const TYPES = ['voucher', 'refund', 'gift', 'coupon']
 const TYPE_LABELS = { voucher: 'שובר', refund: 'זיכוי', gift: 'מתנה', coupon: 'קופון' }
@@ -9,9 +10,24 @@ const EMPTY = { store: '', code: '', amount: '', currency: '₪', type: 'voucher
 export default function AddVoucherModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(initial ? { ...initial, amount: String(initial.amount) } : EMPTY)
   const [error, setError] = useState('')
+  const [scanError, setScanError] = useState('')
 
   function set(field, val) {
     setForm(f => ({ ...f, [field]: val }))
+  }
+
+  function handleScanResult(data) {
+    setScanError('')
+    setForm(f => ({
+      ...f,
+      store:    data.store    || f.store,
+      code:     data.code     || f.code,
+      amount:   data.amount != null ? String(data.amount) : f.amount,
+      currency: data.currency || f.currency,
+      type:     ['voucher','refund','gift','coupon'].includes(data.type) ? data.type : f.type,
+      expiry:   data.expiry   || f.expiry,
+      notes:    data.notes    || f.notes,
+    }))
   }
 
   function submit(e) {
@@ -35,6 +51,19 @@ export default function AddVoucherModal({ initial, onSave, onClose }) {
         </div>
 
         <form onSubmit={submit} className="flex flex-col gap-4">
+          {/* OCR scanner */}
+          {!initial && (
+            <>
+              <ImageScanner onResult={handleScanResult} onError={setScanError} />
+              {scanError && <p className="text-orange-500 text-xs text-center -mt-2">{scanError}</p>}
+              <div className="flex items-center gap-2 text-xs text-gray-300">
+                <div className="flex-1 h-px bg-gray-100" />
+                או מלא ידנית
+                <div className="flex-1 h-px bg-gray-100" />
+              </div>
+            </>
+          )}
+
           {/* Type selector */}
           <div>
             <label className="text-sm text-gray-500 mb-1 block">סוג</label>
